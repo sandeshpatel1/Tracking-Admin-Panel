@@ -1,0 +1,1367 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeFile="Dashboard.master.cs" Inherits="Master_Dashboard" %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head runat="server">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vehicle Tracking Dashboard</title>
+
+  <!-- Fonts & icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    /* ========================
+       THEME & ACCENT VARIABLES
+       ======================== */
+   :root{
+    --accent: #2563eb;            /* MAIN accent */
+    --accent-light: #00c6ff;      /* gradient start */
+    --accent-contrast: #0b1220;   /* text against accent */
+
+    /* base UI variables */
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --muted: #6b7280;
+    --text: #0f172a;
+    --glass: rgba(255,255,255,0.6);
+    --shadow-sm: 0 6px 20px rgba(15,23,42,0.06);
+    --shadow-md: 0 10px 30px rgba(15,23,42,0.09);
+    --radius: 12px;
+}
+
+
+    /* =========== DARK THEME VARIABLES (will not overwrite accent vars) =========== */
+    body.theme-dark{
+      --bg: #0b1220;
+      --card: #0f1724;
+      --muted: #9aa6b2;
+      --text: #e6eef7;
+      --glass: rgba(255,255,255,0.04);
+      --shadow-sm: 0 8px 28px rgba(2,6,23,0.5);
+      --shadow-md: 0 18px 40px rgba(2,6,23,0.6);
+    }
+
+    /* ===========================
+       RESET & BASE STYLING (unchanged)
+       =========================== */
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+      background:var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      overflow-x:hidden;
+    }
+
+    /* ---------- Layout / Sidebar ---------- */
+   .sidebar {
+    position:fixed;
+    left:0; top:0;
+    width:250px; height:100vh;
+    background: linear-gradient(180deg, var(--primary-2), var(--accent-contrast) 80%) !important; 
+    color:#fff;
+    padding:18px 14px;
+    box-shadow: var(--shadow-md);
+    transition: width .28s ease, transform .28s ease, background .28s ease;
+    z-index:220;
+    display:flex; flex-direction:column;
+    gap:14px;
+}
+
+   body.theme-dark .sidebar {
+    background: linear-gradient(180deg, var(--accent-contrast), var(--primary-2) 80%) !important;
+      color: #e2e8f0;
+}
+
+
+    .sidebar.collapsed{ width:80px; }
+    .sidebar .logo{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+    }
+    .logo-left{ display:flex; gap:10px; align-items:center; }
+    .logo-icon{ font-size:22px; color:var(--primary); transition: color .18s ease; }
+    .logo-text{ font-weight:700; letter-spacing:0.2px; font-size:18px; opacity:1; transition:opacity .2s;}
+    .sidebar.collapsed .logo-text{ opacity:0; pointer-events:none; }
+
+    /* Menu */
+    .menu{ list-style:none; margin:10px 0 0; padding:0; display:flex; flex-direction:column; gap:6px; overflow:auto; }
+    .menu li{ border-radius:10px; }
+    .menu-link{
+      display:flex; gap:12px; align-items:center;
+      padding:10px 12px; color:rgba(255,255,255,0.85);
+      text-decoration:none; font-weight:600; font-size:14px;
+      transition: all .18s ease;
+    }
+    .menu-link i{ width:20px; text-align:center; font-size:16px; color:rgba(255,255,255,0.95); transition: color .18s ease; }
+    .menu-link span{ transition:opacity .18s; }
+    .menu-link:hover{ background:rgba(255,255,255,0.05); transform:translateX(4px); color:#fff; }
+
+    .menu li.active .menu-link {
+      background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      color: var(--primary);
+      border-left: 4px solid var(--primary);
+    }
+
+    .sidebar.collapsed .menu-link span{ opacity:0; pointer-events:none; }
+
+    /* scrollbars hide to keep original look */
+    .sidebar, .sidebar * { scrollbar-width: none !important; }
+    .sidebar::-webkit-scrollbar, .sidebar *::-webkit-scrollbar { display:none !important; }
+    .sidebar { overflow: hidden !important; }
+    .menu { overflow-y: hidden !important; overflow-x: hidden !important; }
+
+    /* overlay */
+    .overlay{ display:none; position:fixed; inset:0; background:rgba(2,6,23,0.45); z-index:210; transition:opacity .2s; }
+    .overlay.active{ display:block; opacity:1; }
+
+    /* ---------- Topbar ---------- */
+    .topbar{
+      position:fixed; left:250px; right:0; height:64px; top:0;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 18px; gap:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.6));
+      backdrop-filter: blur(8px);
+      border-bottom:1px solid rgba(15,23,42,0.04);
+      z-index:200; transition:left .28s ease, background .28s ease;
+    }
+    .sidebar.collapsed + .topbar{ left:80px; }
+
+    .left-controls{ display:flex; align-items:center; gap:12px; }
+    .toggle-btn{ font-size:20px; color:var(--primary-2); cursor:pointer; padding:8px; border-radius:8px; }
+    .title-mini{ font-weight:700; font-size:16px; color:var(--accent-contrast) }
+
+    .search-container{
+      display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
+      background:var(--card); box-shadow:var(--shadow-sm); border:1px solid rgba(15,23,42,0.04);
+    }
+    .search-input{ border:none; outline:none; background:transparent; width:220px; font-size:14px; color:var(--text) }
+    .search-icon{ color:var(--primary-2); font-size:14px }
+
+    .right-controls{ display:flex; align-items:center; gap:18px; }
+
+    /* Profile */
+    .profile-wrapper{ width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; background:var(--card); box-shadow:var(--shadow-sm) }
+    .profile-wrapper i{ color:var(--primary-2) }
+
+    .profile-modal{
+      position:fixed; top:72px; right:20px; width:260px; background:var(--card); color:var(--text);
+      border-radius:12px; padding:14px; box-shadow:var(--shadow-md); z-index:500; display:none;
+    }
+
+    /* ---------- Main content area ---------- */
+    .main-content{
+      margin-left:250px; 
+    padding: 0px 22px 22px 22px ; margin-top:78px; transition:margin-left .28s ease, background .28s;
+    }
+    .sidebar.collapsed ~ .main-content{ margin-left:80px; }
+
+    /* ---------- Buttons & UI controls using accent variables ---------- */
+    .btn-clean{ border:none; padding:8px 12px; border-radius:10px; font-weight:700; cursor:pointer; display:inline-flex; gap:8px; align-items:center; }
+    .btn-primary{ background:linear-gradient(90deg,var(--primary),var(--primary-2)); color:#fff; box-shadow:var(--shadow-sm) }
+    .btn-ghost{ background:transparent; color:var(--text); border:1px solid rgba(15,23,42,0.06) }
+
+    /* floating player demonstrates accent usage */
+    .floating-player{ position:fixed; left:20px; bottom:20px; z-index:999; background:var(--card); border-radius:999px; padding:10px 14px; display:flex; gap:12px; align-items:center; box-shadow:var(--shadow-md); }
+    .floating-player .play{ width:44px; height:44px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:18px; background:linear-gradient(135deg,var(--primary-2),var(--primary)); box-shadow:0 8px 20px rgba(2,6,23,0.12); cursor:pointer }
+    .floating-player .controls{ display:flex; gap:12px; align-items:center; min-width:180px; }
+
+    /* details cards */
+    .tp-details{ margin-top:18px; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; transition:max-height .28s cubic-bezier(.2,.9,.3,1), opacity .2s; }
+    .tp-details.collapsed{ max-height:0; opacity:0; pointer-events:none; overflow:hidden; }
+
+    .detail-card{ background:var(--card); border-radius:12px; padding:14px 16px; border:1px solid rgba(15,23,42,0.04); box-shadow:var(--shadow-sm); transition:transform .18s, box-shadow .18s; }
+    .detail-card:hover{ transform:translateY(-4px); box-shadow:0 16px 40px rgba(2,6,23,0.08) }
+    .detail-title{ font-size:15px; font-weight:700; color:var(--primary-2); margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid rgba(15,23,42,0.04) }
+    .detail-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:13px; color:var(--muted); border-bottom:1px dashed rgba(15,23,42,0.03) }
+    .detail-row:last-child{ border-bottom:none }
+    .detail-row div:first-child{ font-weight:600; color:var(--text) }
+    .detail-row div:last-child{ font-weight:600; color:var(--primary-2) }
+
+    /* A1 theme toggle (unchanged apart from not referencing label) */
+    .a1-toggle { --w: 70px; --h: 32px; display:flex; align-items:center; gap:8px; user-select:none; }
+    .a1-track { width: var(--w); height: var(--h); border-radius:999px; padding:4px; position:relative; background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.03)); box-shadow: inset 0 2px 6px rgba(2,6,23,0.03); display:flex; align-items:center; justify-content:space-between; overflow:hidden; transition: background .28s ease; }
+    .a1-track .left-slot, .a1-track .right-slot { width: calc((var(--w) - var(--h)) / 2); height: 100%; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+    .a1-track .left-slot i, .a1-track .right-slot i { font-size:14px; color:var(--muted); opacity:0.95; transition: color .28s ease; transform-origin:center; }
+    .a1-knob { width: calc(var(--h) - 8px); height: calc(var(--h) - 8px); border-radius:50%; background: linear-gradient(180deg,#fff,#f4f6f9); position:absolute; left:4px; top:4px; transition: transform .34s cubic-bezier(.2,.9,.3,1), background .28s; box-shadow: 0 4px 10px rgba(2,6,23,0.12); display:flex; align-items:center; justify-content:center; z-index:2; pointer-events:auto; }
+    .a1-knob .inner-dot { width:60%; height:60%; border-radius:50%; background:#FFD166; box-shadow:0 1px 0 rgba(0,0,0,0.05); transition: opacity .28s ease, transform .28s ease; }
+    .a1-track.dark { background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03)); }
+    .a1-track.dark .a1-knob { transform: translateX(calc(var(--w) - var(--h))); background: linear-gradient(180deg,#0b1220,#071028); }
+    .a1-label { display:none; } /* removed label per request */
+
+/* Notification container */
+.notif-wrap {
+    position: relative;
+    cursor: pointer;
+}
+
+/* Red unread dot */
+.notif-dot {
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.4);
+}
+
+/* DROPDOWN PANEL — compact glass style */
+.notif-dropdown {
+    position: absolute;
+    top: 40px;
+    right: -6px;
+    width: 240px;                       /* smaller and cleaner */
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+   background: rgba(255,255,255,0.55);     /* was 0.45 → now 0.75 */
+    border: 1px solid rgba(255,255,255,0.30);  /* slightly more visible border */
+    border-radius: 14px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+    overflow: hidden;
+    transform: translateY(-8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all .22s ease;
+    z-index: 9999;
+}
+
+body.theme-dark .notif-dropdown {
+  background: rgba(15,23,42,0.70);       /* was 0.55 → now 0.70 */
+    border: 1px solid rgba(255,255,255,0.10);
+}
+
+/* Show dropdown */
+.notif-dropdown.open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* HEADER */
+.notif-header {
+    padding: 10px 14px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+    background: rgba(255,255,255,0.30);
+}
+
+body.theme-dark .notif-header {
+    background: rgba(255,255,255,0.);
+}
+
+/* ITEMS */
+.notif-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    transition: background .18s ease;
+}
+
+.notif-item:hover {
+    background: rgba(255,255,255,0.14);
+}
+
+body.theme-dark .notif-item:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+/* TITLES */
+.notif-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.notif-time {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+/* Close button */
+.notif-close {
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px;
+    transition: 0.18s ease;
+}
+
+.notif-close:hover {
+    color: var(--accent);
+    transform: scale(1.2);
+}
+
+/* Removing animation */
+.notif-item.removing {
+    opacity: 0;
+    transform: translateX(10px);
+    height: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    transition: all .22s ease;
+}
+
+/* EMPTY STATE — polished, minimal */
+.notif-empty {
+    padding: 28px 10px;
+    text-align: center;
+    color: var(--muted);
+    display: none;
+}
+
+.notif-empty i {
+    font-size: 30px;
+    opacity: 0.7;
+    margin-bottom: 6px;
+}
+
+.notif-empty p {
+    margin: 0;
+    font-size: 13px;
+}
+
+/* FOOTER */
+.notif-footer {
+    padding: 10px 14px;
+    text-align: center;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.notif-footer:hover {
+    background: rgba(255,255,255,0.12);
+}
+
+/* ===== Command Palette Animation ===== */
+.cmd-overlay {
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.cmd-overlay.open {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cmd-card {
+  transform: translateY(-12px);
+  opacity: 0;
+  transition: opacity .22s ease, transform .22s ease;
+}
+
+.cmd-card.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+/* Command palette - compact modern look */
+.cmd-overlay {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    z-index: 99999;
+    padding: 24px;
+    pointer-events: auto;           /* ENABLE clicks */
+}
+
+.cmd-overlay.open {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+
+.cmd-overlay[aria-hidden="false"] { pointer-events: auto; }
+
+.cmd-card {
+  width: min(420px, 92%);
+  max-width: 450px;
+  border-radius: 12px;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.92));
+  box-shadow: 0 20px 50px rgba(2,6,23,0.45);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(2,6,23,0.06);
+}
+
+
+
+/* dark theme adaptation */
+body.theme-dark .cmd-card {
+  background: linear-gradient(180deg, rgba(9,14,22,0.95), rgba(9,14,22,0.92));
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+/* input */
+.cmd-input {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 15px;
+  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,0.06);
+  box-shadow: 0 4px 14px rgba(2,6,23,0.06);
+  outline: none;
+  font-weight:600;
+  color: var(--text);
+  background: var(--card);
+}
+
+/* input dark */
+body.theme-dark .cmd-input { background: var(--card); border: 1px solid rgba(255,255,255,0.06); color:var(--text); }
+
+/* list */
+.cmd-list { list-style:none; margin:10px 0 6px; padding:0; max-height:320px; overflow:auto; border-radius:8px; }
+.cmd-item {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; padding:10px 12px; border-radius:8px; cursor:pointer;
+  transition: background .12s ease, transform .06s ease;
+  border: 1px solid transparent;
+}
+.cmd-item .meta { color:var(--muted); font-size:13px; margin-left:6px; }
+.cmd-item .label { font-weight:700; color:var(--text); }
+
+/* hover / selected */
+.cmd-item:hover, .cmd-item[aria-selected="true"] { background: linear-gradient(90deg, rgba(0,0,0,0.02), rgba(0,0,0,0.01)); transform:translateY(-1px); border-color: rgba(0,0,0,0.03); }
+body.theme-dark .cmd-item:hover, body.theme-dark .cmd-item[aria-selected="true"] { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.03); }
+
+/* accent pill */
+.cmd-pill {
+  background: linear-gradient(90deg,var(--primary),var(--primary-2));
+  color:#fff; padding:6px 10px; border-radius:999px; font-weight:700; font-size:13px;
+  box-shadow: 0 6px 18px rgba(37,99,235,0.12);
+}
+
+/* help row */
+.cmd-help { font-size:13px; color:var(--muted); display:flex; justify-content:space-between; gap:12px; align-items:center; padding-top:8px; }
+
+/* small kbd */
+kbd { background: rgba(0,0,0,0.06); padding:2px 6px; border-radius:6px; font-weight:700; font-size:12px; }
+body.theme-dark kbd { background: rgba(255,255,255,0.05); }
+
+
+
+
+    /* Responsive adjustments (unchanged) */
+    @media (max-width: 990px) {
+      .sidebar { transform:translateX(-100%); width:260px !important; height:100%; position:fixed; z-index:9999; transition: transform 0.35s ease; }
+      .sidebar.active { transform: translateX(0); }
+      .overlay.active { display:block; opacity:1; z-index:9998; }
+      .topbar { left:0 !important; padding:0 14px; height:60px; gap:10px; }
+      .main-content { margin-left:0 !important; margin-top:80px; padding:16px; }
+      .search-input { width:140px; font-size:13px; }
+      .a1-toggle { transform: scale(0.86); }
+    }
+    @media (max-width:600px){
+      .row.g-4 > div{ flex:0 0 100%; max-width:100%; }
+      h2.fw-bold{ font-size:22px; }
+      .text-muted{ font-size:13px; }
+      #map{ height:260px !important; border-radius:12px; }
+      .card ul li{ font-size:13px; padding:4px 0; }
+      .breadcrumb-container{ font-size:13px !important; margin-bottom:8px; }
+      .search-input{ display:none; }
+      .topbar{ height:56px !important; }
+      .a1-label{ display:none; }
+    }
+    @media (max-width:400px){
+      .main-content{ padding:12px; }
+      .search-container{ display:none; }
+      .card{ padding:12px !important; }
+      .menu-link{ padding:12px; font-size:15px; }
+      .menu-link i{ font-size:18px; }
+    }
+  </style>
+</head>
+
+
+
+
+<body>
+  <form id="form1" runat="server">
+    <!-- overlay for mobile -->
+    <div class="overlay" id="overlay" aria-hidden="true"></div>
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar" aria-label="Main navigation">
+      <div class="logo">
+        <div class="logo-left">
+          <i class="fa-solid fa-route logo-icon" aria-hidden="true"></i>
+          <div class="logo-text">ATM</div>
+        </div>
+        <i class="fa-solid fa-xmark close-btn" id="closeBtn" title="Close menu" style="display:none"></i>
+      </div>
+
+      <ul class="menu" id="menuList" runat="server">
+        <li id="liMonitoring" runat="server"><a href="../../index.aspx" class="menu-link"><i class="fa-solid fa-tv"></i><span>Monitoring</span></a></li>
+        <li id="liTracking" runat="server"><a href="../../TrackingMap.aspx" class="menu-link"><i class="fa-solid fa-location-dot"></i><span>Tracking</span></a></li>
+        <li id="liTrackPlay" runat="server"><a href="../../TrackPlay.aspx" class="menu-link"><i class="fa-solid fa-crosshairs"></i><span>TrackPlay</span></a></li>
+        <li id="liSettings" runat="server"><a href="../../Settings.aspx" class="menu-link"><i class="fa-solid fa-gear"></i><span>Settings</span></a></li>
+        <li id="liDevices"  runat="server"><a href="../../Devices.aspx" class="menu-link"><i class="fa-solid fa-database"></i><span>Master</span></a></li>
+        <li><a href="#" class="menu-link"><i class="fa-solid fa-file-invoice-dollar"></i><span>Accounts</span></a></li>
+        <li><a href="#" class="menu-link"><i class="fa-solid fa-chart-line"></i><span>Reports</span></a></li>
+        <li><a href="#" class="menu-link"><i class="fa-solid fa-user"></i><span>Profile</span></a></li>
+      </ul>
+    </nav>
+
+    <!-- TOPBAR -->
+    <header class="topbar" id="topbar" role="banner">
+      <div class="left-controls">
+        <i class="fa-solid fa-bars toggle-btn" id="toggleBtn" title="Toggle sidebar"></i>
+
+       <%-- <div class="search-container" role="search" aria-label="Search">
+          <input type="text" placeholder="Search..." class="search-input" />
+          <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+        </div>
+
+        <div class="title-mini" aria-hidden="true"></div>--%>
+      </div>
+
+      <div class="right-controls">
+        <!-- ===== A1 Toggle (Size S) - drop-in (no label shown) ===== -->
+        <div class="a1-toggle" id="themeToggleWrap" title="Toggle theme">
+          <div class="wrap">
+            <div class="a1-track" id="a1Track" role="switch" aria-checked="false" tabindex="0" aria-label="Toggle dark mode">
+              <div class="left-slot" aria-hidden="true"><i class="fa-solid fa-moon"></i></div>
+              <div class="a1-knob" id="a1Knob" aria-hidden="true">
+                <div class="inner-dot" id="a1InnerDot"></div>
+              </div>
+              <div class="right-slot" aria-hidden="true"><i class="fa-solid fa-sun"></i></div>
+            </div>
+          </div>
+        </div>
+
+<div class="notif-wrap">
+    <i class="fa-solid fa-bell notification" id="notifIcon"></i>
+    <span class="notif-dot" id="notifDot"></span>
+
+    <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-header">Notifications</div>
+
+        <div class="notif-item unread">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div class="notif-title">New Alert</div>
+                    <div class="notif-time">Just now</div>
+                </div>
+                <i class="fa-solid fa-xmark notif-close"></i>
+            </div>
+        </div>
+
+        <div class="notif-item unread">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div class="notif-title">3 Devices went offline</div>
+                    <div class="notif-time">5 min ago</div>
+                </div>
+                <i class="fa-solid fa-xmark notif-close"></i>
+            </div>
+        </div>
+
+        <div class="notif-item">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div class="notif-title">Daily report is ready</div>
+                    <div class="notif-time">1 hr ago</div>
+                </div>
+                <i class="fa-solid fa-xmark notif-close"></i>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="notif-empty" id="notifEmpty">
+            <i class="fa-solid fa-bell-slash"></i>
+            <p>No notifications to show</p>
+        </div>
+
+        <div class="notif-footer">View all</div>
+    </div>
+</div>
+
+
+          <!-- insert inside right-controls or left-controls near the search icon -->
+<button id="cmdBtn" class="btn-clean" title="Quick actions (Ctrl/Cmd+K)" type="button" style="display:inline-flex;align-items:center;gap:8px;">
+  <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+  <span class="sr-only">Open command palette</span>
+</button>
+
+<!-- COMMAND PALETTE -->
+<div id="cmdOverlay" aria-hidden="true" class="cmd-overlay" role="dialog" aria-label="Quick actions" style="display:none;">
+
+  <div class="cmd-card" role="document">
+    <input id="cmdInput" class="cmd-input" placeholder="Type to search actions, pages or shortcuts — Ctrl/Cmd+K" aria-label="Search commands" autocomplete="off" />
+    <ul id="cmdList" class="cmd-list" role="listbox" aria-label="Results"></ul>
+    <div class="cmd-help">Press <kbd>Esc</kbd> to close — <kbd>Enter</kbd> to open</div>
+  </div>
+</div>
+
+        <div class="profile-wrapper" id="profileBtn" title="Profile">
+          <i class="fa-solid fa-user"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- Profile modal -->
+    <div class="profile-modal" id="profileModal" role="dialog" aria-hidden="true">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(180deg,var(--primary),var(--primary-2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div style="text-align:center;font-weight:700;"><%= Session["UserName"] ?? "Admin" %></div>
+        <div style="font-size:13px;color:var(--muted);"><%= Session["UserRole"] ?? "Administrator" %></div>
+        <div style="font-size:13px;color:var(--muted)"><%= Session["UserEmail"] ?? "admin@atm.com" %></div>
+
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="btn-clean btn-primary" onclick="location.href='Profile.aspx'" type="button"><i class="fa-regular fa-id-badge"></i> View</button>
+          <button class="btn-clean btn-ghost" id="logoutBtn" type="button" style="background:transparent;color:var(--primary-2)"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content" id="mainContent" role="main">
+      <asp:ContentPlaceHolder ID="MainContent" runat="server"></asp:ContentPlaceHolder>
+    </main>
+  </form>
+
+  <!-- ====== SCRIPTS: Sidebar, active menu, theme toggle & accent support ====== -->
+  <script>
+      document.addEventListener("DOMContentLoaded", function () {
+
+          const sidebar = document.getElementById('sidebar');
+          const toggleBtn = document.getElementById('toggleBtn');
+          const overlay = document.getElementById('overlay');
+          const closeBtn = document.getElementById('closeBtn');
+          const menuLinks = document.querySelectorAll('.menu-link');
+          const profileBtn = document.getElementById('profileBtn');
+          const profileModal = document.getElementById('profileModal');
+          const logoutBtn = document.getElementById('logoutBtn');
+
+          /* ---------------- Sidebar & Active Logic ---------------- */
+          const savedCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+          if (savedCollapsed) sidebar.classList.add('collapsed');
+
+          function normalizePath(path) {
+              if (!path) return '';
+              return path.replace(/\.\.\//g, '').toLowerCase().split('/').pop().split('?')[0];
+          }
+
+          const currentPage = normalizePath(window.location.pathname);
+          let activeSet = false;
+          const savedPage = localStorage.getItem('activePage');
+
+          menuLinks.forEach(link => {
+              const li = link.closest('li');
+              const href = normalizePath(link.getAttribute('href'));
+              const label = (link.querySelector('span') ? link.querySelector('span').textContent.trim() : '');
+
+              if ((href && href === currentPage) || (savedPage && href === savedPage)) {
+                  document.querySelectorAll('#menuList li').forEach(x => x.classList.remove('active'));
+                  li.classList.add('active');
+                  localStorage.setItem('activePage', href);
+                  localStorage.setItem('activeLabel', label);
+                  activeSet = true;
+              }
+
+              link.addEventListener('click', function () {
+                  document.querySelectorAll('#menuList li').forEach(x => x.classList.remove('active'));
+                  li.classList.add('active');
+                  localStorage.setItem('activePage', href);
+                  localStorage.setItem('activeLabel', label);
+
+                  if (window.innerWidth <= 990) {
+                      sidebar.classList.remove('active');
+                      sidebar.classList.remove('collapsed');
+                      overlay.classList.remove('active');
+                  }
+              });
+          });
+
+          if (!activeSet) {
+              const def = Array.from(menuLinks).find(l =>
+                  l.getAttribute('href') && l.getAttribute('href').toLowerCase().includes('index.aspx')
+              );
+              if (def) {
+                  def.closest('li').classList.add('active');
+                  localStorage.setItem('activePage', normalizePath(def.getAttribute('href')));
+              }
+          }
+
+          /* ---------------- SIDEBAR TOGGLE ---------------- */
+          toggleBtn.addEventListener("click", function () {
+
+              if (window.innerWidth <= 990) {
+                  // Mobile drawer behavior
+                  sidebar.classList.remove("collapsed");
+                  sidebar.classList.toggle("active");
+                  overlay.classList.toggle("active");
+                  closeBtn.style.display = sidebar.classList.contains("active") ? "block" : "none";
+              } else {
+                  // Desktop collapse mode
+                  sidebar.classList.toggle("collapsed");
+                  localStorage.setItem("sidebarCollapsed", sidebar.classList.contains("collapsed"));
+              }
+          });
+
+          /* ---------------- CLOSE BUTTON (mobile) ---------------- */
+          closeBtn.addEventListener("click", function () {
+              sidebar.classList.remove("active");
+              sidebar.classList.remove("collapsed");
+              overlay.classList.remove("active");
+              closeBtn.style.display = 'none';
+          });
+
+          /* ---------------- OVERLAY CLICK (mobile) ---------------- */
+          overlay.addEventListener("click", function () {
+              sidebar.classList.remove("active");
+              sidebar.classList.remove("collapsed");
+              overlay.classList.remove("active");
+              closeBtn.style.display = 'none';
+          });
+
+          /* ---------------- PROFILE MODAL ---------------- */
+          profileBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              const shown = profileModal.style.display === 'block';
+              profileModal.style.display = shown ? 'none' : 'block';
+          });
+
+          document.addEventListener("click", function (e) {
+              if (!profileModal.contains(e.target) && !profileBtn.contains(e.target)) {
+                  profileModal.style.display = 'none';
+              }
+          });
+
+          /* ---------------- LOGOUT ---------------- */
+          logoutBtn?.addEventListener("click", function () {
+              fetch('/Logout.aspx').then(() => window.location.href = '/Login.aspx');
+          });
+
+          /* ---------------- A1 THEME TOGGLE ----------------
+             - Uses localStorage.themeDark to persist user preference
+             - Updates knob and track classes for visuals
+          ------------------------------------------------------------------ */
+          (function () {
+              const track = document.getElementById('a1Track');
+              const innerDot = document.getElementById('a1InnerDot');
+
+              const saved = localStorage.getItem('themeDark');
+              const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+              let isDark = (saved === null) ? prefersDark : (saved === 'true');
+
+              function applyTheme(dark) {
+                  isDark = !!dark;
+
+                  if (isDark) {
+                      document.body.classList.add('theme-dark');
+                      track.classList.add('dark');
+                      track.setAttribute('aria-checked', 'true');
+                      innerDot.style.background = '#94a3b8';
+                  } else {
+                      document.body.classList.remove('theme-dark');
+                      track.classList.remove('dark');
+                      track.setAttribute('aria-checked', 'false');
+                      innerDot.style.background = '#FFD166';
+                  }
+
+                  // persist
+                  localStorage.setItem('themeDark', isDark);
+              }
+
+              applyTheme(isDark);
+
+              function toggleTheme() {
+                  applyTheme(!isDark);
+              }
+
+              track.addEventListener("click", toggleTheme);
+
+              track.addEventListener("keydown", function (e) {
+                  if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleTheme();
+                  }
+              });
+
+              // Also allow clicking the wrap to toggle while preserving accessibility.
+              const wrap = document.getElementById('themeToggleWrap');
+              wrap.addEventListener("click", function (e) {
+                  if (e.target === track || track.contains(e.target)) return;
+                  toggleTheme();
+              });
+          })();
+
+          /* ---------------- ACCENT ENGINE ----------------
+             - Reads localStorage 'accent' (values: 'blue'|'purple'|'orange' or custom)
+             - Applies CSS variables across the app so accent changes reflect everywhere.
+             - Listen to storage events so Settings page can update accent live.
+          ------------------------------------------------------------------ */
+          (function () {
+              const ACCENT_KEY = 'accent'; // localStorage key
+
+              const presets = {
+                  
+                      /* BLUE (Electric) */
+                      electric: {
+                          primary: "#00c6ff",       // light blue
+                          primary2: "#2563eb",      // main blue
+                          accentLight: "#00c6ff",
+                          accent: "#2563eb",
+                          contrast: "#0b1220"
+                      },
+
+                      /* CYAN / TURQUOISE (Your 2nd accent) */
+                      purple: {                     // keep key 'purple' because your swatches use it
+                          primary: "#06b6d4",       // light cyan
+                          primary2: "#0ea5e9",      // main cyan (NO PURPLE ANYMORE)
+                          accentLight: "#06b6d4",
+                          accent: "#0ea5e9",
+                          contrast: "#0b1220"
+                      },
+
+                      /* ORANGE (Warm) */
+                      warm: {
+                          primary: "#fb923c",       // light orange
+                          primary2: "#f97316",      // main orange
+                          accentLight: "#fb923c",
+                          accent: "#f97316",
+                          contrast: "#0b1220"
+                      }
+              
+
+              };
+
+              function applyAccent(key) {
+                  const k = (key && ACCENTS[key]) ? key : 'electric';
+                  const p = ACCENTS[k];
+
+                  // update main CSS variables
+                  document.documentElement.style.setProperty('--accent', p.accent);
+                  document.documentElement.style.setProperty('--accent-light', p.accentLight);
+                  document.documentElement.style.setProperty('--accent-strong', p.contrast);
+
+                  // ALSO UPDATE DASHBOARD.MASTER VARIABLES
+                  document.documentElement.style.setProperty('--primary', p.accentLight);
+                  document.documentElement.style.setProperty('--primary-2', p.accent);
+                  document.documentElement.style.setProperty('--accent-2', p.accentLight);
+                  document.documentElement.style.setProperty('--accent-contrast', p.contrast);
+
+                  // Update strips
+                  document.querySelectorAll('.accent-strip').forEach(el => {
+                      el.style.background = `linear-gradient(180deg, ${p.accentLight}, ${p.accent})`;
+                  });
+
+                  // Update icons
+                  document.querySelectorAll('.glass-icon').forEach(el => {
+                      el.style.color = p.accent;
+                  });
+
+                  // Update heading accents
+                  document.querySelectorAll('.heading-accent').forEach(el => {
+                      el.style.background = `linear-gradient(180deg, ${p.accentLight}, ${p.accent})`;
+                  });
+
+                  // Update summary text
+                  document.querySelectorAll('.summary-title').forEach(el => {
+                      el.style.color = p.contrast;
+                  });
+
+                  // Update buttons
+                  document.querySelectorAll('.btn').forEach(b => {
+                      if (!b.classList.contains('ghost')) {
+                          b.style.background = `linear-gradient(90deg, ${p.accentLight}, ${p.accent})`;
+                      }
+                  });
+
+                  writeSavedAccent(k);
+                  refreshSparks();
+                  document.dispatchEvent(new Event('accent-changed'));
+              }
+
+
+              //function applyAccent(name) {
+              //    // accept a preset name or a serialized custom object (optional)
+              //    let p = presets[name];
+              //    if (!p) {
+              //        // fallback if unknown name — try to parse custom JSON stored (optional)
+              //        try {
+              //            const raw = localStorage.getItem(ACCENT_KEY);
+              //            const parsed = raw && raw.startsWith('{') ? JSON.parse(raw) : null;
+              //            if (parsed && parsed.primary && parsed.primary2) {
+              //                p = {
+              //                    primary: parsed.primary,
+              //                    primary2: parsed.primary2,
+              //                    accent2: parsed.accent2 || parsed.primary,
+              //                    contrast: parsed.contrast || '#0b1220'
+              //                };
+              //            } else {
+              //                p = presets.blue;
+              //            }
+              //        } catch (err) { p = presets.blue; }
+              //    }
+
+              //    const root = document.documentElement.style;
+              //    root.setProperty('--primary', p.primary);
+              //    root.setProperty('--primary-2', p.primary2);
+              //    root.setProperty('--accent-2', p.accent2);
+              //    root.setProperty('--accent-contrast', p.contrast);
+
+              //    // update a few inline elements that read color at runtime (if any)
+              //    document.querySelectorAll('.logo-icon').forEach(el => el.style.color = p.primary);
+              //    document.querySelectorAll('.search-icon').forEach(el => el.style.color = p.primary2);
+              //    document.querySelectorAll('.profile-wrapper i').forEach(el => el.style.color = p.primary2);
+              //    // update logout color specially
+              //    const logout = document.getElementById('logoutBtn');
+              //    if (logout) logout.style.color = p.primary2;
+
+              //    // store active accent for future loads (only store preset name unless custom)
+              //    // If input was preset name, store that name; if was a custom object, keep custom serialized.
+              //    if (presets[name]) {
+              //        localStorage.setItem(ACCENT_KEY, name);
+              //    } else {
+              //        // if previously saved as JSON string, keep it as-is
+              //        // (no automatic overwrite)
+              //        if (!localStorage.getItem(ACCENT_KEY)) localStorage.setItem(ACCENT_KEY, name || 'blue');
+              //    }
+              //}
+
+              //// initial read — stored value can be preset name or a JSON string for custom
+              //const stored = localStorage.getItem(ACCENT_KEY) || 'blue';
+              //applyAccent(stored);
+
+              // listen for changes from other tabs/pages (Settings page)
+              window.addEventListener('storage', function (e) {
+                  if (e.key === ACCENT_KEY) {
+                      applyAccent(e.newValue || 'blue');
+                  }
+                  if (e.key === 'themeDark') {
+                      // theme changes handled elsewhere; re-apply accent to ensure contrast consistent
+                      applyAccent(localStorage.getItem(ACCENT_KEY) || 'blue');
+                  }
+              });
+
+              // tiny global helper so you can call __applyAccent('purple') from console if needed
+              window.__applyAccent = applyAccent;
+          })();
+
+          /* ESC KEY closes modals */
+          document.addEventListener('keydown', function (e) {
+              if (e.key === 'Escape') {
+                  profileModal.style.display = 'none';
+                  sidebar.classList.remove('active');
+                  overlay.classList.remove('active');
+                  closeBtn.style.display = 'none';
+              }
+          });
+
+      });
+  </script>
+
+<script>
+    /* ====================================================
+          UNIVERSAL ACCENT ENGINE (FINAL FIX)
+       ==================================================== */
+
+    const ACCENTS = {
+        // BLUE (electric)
+        electric: {
+            a: "#00c6ff",   // light
+            b: "#2563eb"    // main
+        },
+
+        // CYAN / TURQUOISE (your 2nd accent)
+        purple: {           // keep key 'purple' because your swatch ID depends on it
+            a: "#06b6d4",   // light cyan
+            b: "#0ea5e9"    // main cyan (NOT purple anymore)
+        },
+
+        // ORANGE (warm)
+        warm: {
+            a: "#fb923c",   // light
+            b: "#f97316"    // main
+        }
+    };
+
+
+    function applyAccentGlobal() {
+        const key = localStorage.getItem("uiAccent") || "electric";
+        const ac = ACCENTS[key];
+
+        /* update global css variables */
+        document.documentElement.style.setProperty("--primary", ac.a);
+        document.documentElement.style.setProperty("--primary-2", ac.b);
+        document.documentElement.style.setProperty("--accent-2", ac.a);
+
+        /* sidebar active highlighting */
+        document.querySelectorAll(".menu li.active .menu-link").forEach(el => {
+            el.style.borderLeft = `4px solid ${ac.b}`;
+            el.style.color = ac.b;
+        });
+
+        /* sidebar icons */
+        document.querySelectorAll(".menu-link i").forEach(el => {
+            if (el.closest("li").classList.contains("active")) {
+                el.style.color = ac.b;
+            }
+        });
+
+        /* buttons */
+        document.querySelectorAll(".btn-primary").forEach(el => {
+            el.style.background = `linear-gradient(90deg, ${ac.a}, ${ac.b})`;
+        });
+
+        /* headings */
+        document.querySelectorAll(".heading-accent").forEach(el => {
+            el.style.background = `linear-gradient(90deg, ${ac.a}, ${ac.b})`;
+        });
+
+        /* profile modal button */
+        const logout = document.getElementById("logoutBtn");
+        if (logout) logout.style.color = ac.b;
+
+        /* search icon */
+        document.querySelectorAll(".search-icon").forEach(el => {
+            el.style.color = ac.b;
+        });
+
+        /* topbar toggle, profile icon */
+        document.querySelectorAll(".profile-wrapper i").forEach(el => {
+            el.style.color = ac.b;
+        });
+
+        /* store back */
+        localStorage.setItem("uiAccent", key);
+    }
+
+    /* run on load */
+    applyAccentGlobal();
+
+    /* sync across tabs */
+    window.addEventListener("storage", (e) => {
+        if (e.key === "uiAccent") applyAccentGlobal();
+    });
+
+
+</script>
+
+    <script>
+        const notifIcon = document.getElementById("notifIcon");
+        const notifDropdown = document.getElementById("notifDropdown");
+        const notifDot = document.getElementById("notifDot");
+
+        notifIcon.addEventListener("click", function (e) {
+            e.stopPropagation();
+            notifDropdown.classList.toggle("open");
+
+            // Remove red dot when opened
+            notifDot.style.display = "none";
+        });
+
+        /* Close dropdown when clicking outside */
+        document.addEventListener("click", function (e) {
+            if (!notifDropdown.contains(e.target) && e.target !== notifIcon) {
+                notifDropdown.classList.remove("open");
+            }
+        });
+
+        function updateUnreadDot() {
+            const unreadLeft = document.querySelectorAll(".notif-item").length;
+            const emptyState = document.getElementById("notifEmpty");
+
+            // Red dot visibility
+            notifDot.style.display = unreadLeft > 0 ? "block" : "none";
+
+            // Empty state visibility
+            emptyState.style.display = unreadLeft === 0 ? "block" : "none";
+        }
+
+
+        /* ============================
+      NOTIFICATION DISMISS
+   ============================ */
+
+        document.querySelectorAll(".notif-close").forEach(btn => {
+            btn.addEventListener("click", function (e) {
+                e.stopPropagation();
+
+                const item = this.closest(".notif-item");
+
+                // Remove animation
+                item.classList.add("removing");
+
+                setTimeout(() => {
+                    item.remove();
+                    updateUnreadDot();   // ← NOW UPDATES EMPTY MESSAGE
+                }, 220);
+            });
+        });
+
+        // Remove dot if user opens notifications
+        notifIcon.addEventListener("click", function () {
+            notifDot.style.display = "none";
+        });
+
+        // Update dot on load
+        updateUnreadDot();
+
+    </script>
+
+
+<script>
+    (function () {
+
+        /* ================================
+           COMMAND PALETTE ACTION LIST
+        ================================= */
+        const ACTIONS = [
+            { id: 'monitoring', label: 'Monitoring', meta: 'Go to dashboard', href: '/index.aspx' },
+            { id: 'tracking', label: 'Tracking Map', meta: 'Realtime map', href: '/TrackingMap.aspx' },
+            { id: 'trackplay', label: 'Track Playback', meta: 'Playback tracks', href: '/TrackPlay.aspx' },
+            { id: 'settings', label: 'Settings', meta: 'Theme & preferences', href: '/Settings.aspx' },
+            { id: 'devices', label: 'Devices (Master)', meta: 'Manage devices', href: '/Devices.aspx' },
+            { id: 'new-trip', label: 'Create New Trip', meta: 'Open trip wizard', run: () => alert('Open create trip (demo)') },
+            { id: 'alerts', label: 'Alerts', meta: 'View active alerts', href: '/Alerts.aspx' },
+            { id: 'reports', label: 'Reports', meta: 'Generate reports', href: '/Reports.aspx' }
+        ];
+
+
+        /* ================================
+           ELEMENT REFERENCES
+        ================================= */
+        const overlay = document.getElementById("cmdOverlay");
+        const card = document.querySelector(".cmd-card");
+        const input = document.getElementById("cmdInput");
+        const list = document.getElementById("cmdList");
+        const btn = document.getElementById("cmdBtn");
+        const searchIcon = document.querySelector(".search-icon");
+
+        let activeIndex = -1;
+        let currentResults = ACTIONS.slice(0, 8);
+
+
+        /* ================================
+           RENDER RESULT LIST
+        ================================= */
+        function render(results, highlightIndex = -1) {
+            list.innerHTML = "";
+
+            if (!results.length) {
+                list.innerHTML = `
+                <li class="cmd-item">
+                    <div class="label">No results</div>
+                    <div class="meta">Try different keywords</div>
+                </li>`;
+                return;
+            }
+
+            results.forEach((r, i) => {
+                const li = document.createElement("li");
+                li.className = "cmd-item";
+                li.setAttribute("role", "option");
+                li.setAttribute("data-id", r.id);
+                li.setAttribute("tabindex", "-1");
+
+                if (i === highlightIndex) li.setAttribute("aria-selected", "true");
+
+                li.innerHTML = `
+                <div>
+                    <div class="label">${r.label}</div>
+                    <div class="meta">${r.meta || ''}</div>
+                </div>
+                <div>
+                    ${r.href ? `<span class="cmd-pill">Open</span>` : `<span class="cmd-pill">Action</span>`}
+                </div>
+            `;
+
+                li.addEventListener("click", () => activate(r));
+                list.appendChild(li);
+            });
+        }
+
+
+        /* ================================
+           OPEN / CLOSE WITH ANIMATION
+        ================================= */
+        function openPalette(prefocus = true) {
+            overlay.style.display = "grid";
+
+            // trigger animation
+            requestAnimationFrame(() => {
+                overlay.classList.add("open");
+                card.classList.add("show");
+            });
+
+            overlay.setAttribute("aria-hidden", "false");
+            if (prefocus) setTimeout(() => input.focus(), 80);
+
+            render(ACTIONS);
+            activeIndex = -1;
+        }
+
+        function closePalette() {
+            overlay.classList.remove("open");
+            card.classList.remove("show");
+
+            setTimeout(() => {
+                overlay.style.display = "none";
+                overlay.setAttribute("aria-hidden", "true");
+                input.value = "";
+                list.innerHTML = "";
+            }, 180);
+        }
+
+
+        /* ================================
+           SEARCH FILTER
+        ================================= */
+        function search(q) {
+            q = (q || "").trim().toLowerCase();
+            if (!q) return ACTIONS.slice(0, 8);
+
+            const tokens = q.split(/\s+/);
+
+            return ACTIONS
+                .map(a => {
+                    const hay = (a.label + " " + (a.meta || "")).toLowerCase();
+                    let score = 0;
+                    tokens.forEach(t => {
+                        if (hay.startsWith(t)) score += 10;
+                        else if (hay.includes(t)) score += 5;
+                    });
+                    return { a, score };
+                })
+                .filter(x => x.score > 0)
+                .sort((x, y) => y.score - x.score)
+                .map(x => x.a)
+                .slice(0, 12);
+        }
+
+
+        /* ================================
+           ACTIVATE ITEM
+        ================================= */
+        function activate(item) {
+            closePalette();
+            if (!item) return;
+
+            if (item.href) window.location.href = item.href;
+            else if (item.run) item.run();
+        }
+
+
+        /* ================================
+           INPUT EVENTS
+        ================================= */
+        input.addEventListener("input", function () {
+            currentResults = search(this.value);
+            activeIndex = -1;
+            render(currentResults, activeIndex);
+        });
+
+        input.addEventListener("keydown", function (e) {
+            const max = currentResults.length - 1;
+
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                activeIndex = Math.min(max, activeIndex + 1);
+                render(currentResults, activeIndex);
+                scrollToActive();
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                activeIndex = Math.max(-1, activeIndex - 1);
+                render(currentResults, activeIndex);
+                scrollToActive();
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                const item = currentResults[activeIndex] || currentResults[0];
+                activate(item);
+            } else if (e.key === "Escape") {
+                closePalette();
+            }
+        });
+
+        function scrollToActive() {
+            const sel = list.querySelector(".cmd-item[aria-selected='true']");
+            if (sel) sel.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+
+
+        /* ================================
+           OPEN / CLOSE TRIGGERS
+        ================================= */
+        btn.addEventListener("click", () => {
+            const isOpen = overlay.getAttribute("aria-hidden") === "false";
+            isOpen ? closePalette() : openPalette();
+        });
+
+        if (searchIcon) {
+            searchIcon.addEventListener("click", () => {
+                const isOpen = overlay.getAttribute("aria-hidden") === "false";
+                isOpen ? closePalette() : openPalette();
+            });
+        }
+
+        overlay.addEventListener("click", function (e) {
+            if (!card.contains(e.target)) {
+                closePalette();
+            }
+        });
+
+
+
+
+        window.addEventListener("scroll", () => {
+            if (overlay.getAttribute("aria-hidden") === "false") closePalette();
+        });
+
+
+        /* ================================
+           SHORTCUT – Ctrl/Cmd + K
+        ================================= */
+        document.addEventListener("keydown", function (e) {
+            const isMac = navigator.platform.toUpperCase().includes("MAC");
+
+            if ((isMac && e.metaKey && e.key.toLowerCase() === "k") ||
+                (!isMac && e.ctrlKey && e.key.toLowerCase() === "k")) {
+
+                e.preventDefault();
+                const isOpen = overlay.getAttribute("aria-hidden") === "false";
+                isOpen ? closePalette() : openPalette();
+            }
+        });
+
+
+        /* ================================
+           REGISTER EXTERNAL ACTIONS
+        ================================= */
+        window.registerCommand = function (obj) {
+            if (!obj || !obj.id) return;
+            const idx = ACTIONS.findIndex(a => a.id === obj.id);
+            if (idx >= 0) ACTIONS[idx] = obj;
+            else ACTIONS.unshift(obj);
+        };
+
+    })();
+</script>
+
+
+
+
+</body>
+
+
+
+</html>

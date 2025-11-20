@@ -29,6 +29,7 @@ It includes:
 • Chart.js ready (analytics)
 • Clean CSS + JS structure
 • Suitable for API/backend integration
+• Customizeable dashboard theme color
 
 ------------------------------------------------------------
 🧰 TECH STACK
@@ -102,7 +103,6 @@ Login                  → Admin login template
 - Real-time notifications  
 - CRUD operations for devices/vehicles  
 - API-driven charts  
-- Dark mode  
 
 ------------------------------------------------------------
 👨‍💻 AUTHOR
